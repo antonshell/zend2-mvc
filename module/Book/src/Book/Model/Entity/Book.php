@@ -2,12 +2,19 @@
 
 namespace Book\Model\Entity;
 
-class Book {
+use Zend\InputFilter\Factory as InputFactory;
+use Zend\InputFilter\InputFilter;
+use Zend\InputFilter\InputFilterAwareInterface;
+use Zend\InputFilter\InputFilterInterface;
+
+class Book implements InputFilterAwareInterface {
 
     protected $_id;
     protected $_title;
     protected $_isbn;
     protected $_author;
+
+    protected $inputFilter;
 
     public function __construct(array $options = null) {
         if (is_array($options)) {
@@ -76,5 +83,115 @@ class Book {
     public function setAuthor($author) {
         $this->_author = $author;
         return $this;
+    }
+
+    public function exchangeArray($data)
+    {
+        $this->_id = (isset($data['id'])) ? $data['id'] : null;
+        $this->_title = (isset($data['title'])) ? $data['title'] : null;
+        $this->_isbn = (isset($data['isbn'])) ? $data['isbn'] : null;
+        $this->_author = (isset($data['author'])) ? $data['author'] : null;
+    }
+
+    public function getArrayCopy()
+    {
+        $data = get_object_vars($this);
+        return $data;
+
+        //return get_object_vars($this);
+    }
+
+    /**
+     * Set input filter
+     *
+     * @param  InputFilterInterface $inputFilter
+     * @return InputFilterAwareInterface
+     */
+    public function setInputFilter(InputFilterInterface $inputFilter)
+    {
+        throw new \Exception("Not used");
+    }
+
+    /**
+     * Retrieve input filter
+     *
+     * @return InputFilterInterface
+     */
+    public function getInputFilter()
+    {
+        if (!$this->inputFilter) {
+            $inputFilter = new InputFilter();
+            $factory     = new InputFactory();
+
+            $inputFilter->add($factory->createInput([
+                'name'     => 'id',
+                'required' => true,
+                'filters'  => [
+                    ['name' => 'Int'],
+                ],
+            ]));
+
+            $inputFilter->add($factory->createInput([
+                'name'     => 'title',
+                'required' => true,
+                'filters'  => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'StringTrim'],
+                ],
+                'validators' => [
+                    [
+                        'name'    => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'min'      => 1,
+                            'max'      => 100,
+                        ],
+                    ],
+                ],
+            ]));
+
+            $inputFilter->add($factory->createInput([
+                'name'     => 'isbn',
+                'required' => true,
+                'filters'  => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'StringTrim'],
+                ],
+                'validators' => [
+                    [
+                        'name'    => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'min'      => 1,
+                            'max'      => 50, //@TODO set real isbn max length
+                        ],
+                    ],
+                ],
+            ]));
+
+            $inputFilter->add($factory->createInput([
+                'name'     => 'author',
+                'required' => true,
+                'filters'  => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'StringTrim'],
+                ],
+                'validators' => [
+                    [
+                        'name'    => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'min'      => 1,
+                            'max'      => 50,
+                        ],
+                    ],
+                ],
+            ]));
+
+
+            $this->inputFilter = $inputFilter;
+        }
+
+        return $this->inputFilter;
     }
 }

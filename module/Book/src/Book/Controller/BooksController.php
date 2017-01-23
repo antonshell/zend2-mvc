@@ -8,6 +8,7 @@
 namespace Book\Controller;
 
 use Book\Model\Entity\Book;
+use Book\Model\Form\BookForm;
 use Zend\Mvc\Controller\AbstractActionController;
 use Zend\View\Model\ViewModel;
 
@@ -28,52 +29,90 @@ class BooksController extends AbstractActionController
             'books' => $this->getBooksTable()->fetchAll(),
         ));
     }
-    public function addAction() {
+
+    public function addAction()
+    {
+        $form = new BookForm();
+        $form->get('submit')->setValue('Add');
+
         $request = $this->getRequest();
-        $response = $this->getResponse();
         if ($request->isPost()) {
-            //$new_note = new \StickyNotes\Model\Entity\StickyNote();
-            $new_book = new Book();
-            if (!$book_id = $this->getBooksTable()->saveBook($new_book))
-                $response->setContent(\Zend\Json\Json::encode(array('response' => false)));
-            else {
-                $response->setContent(\Zend\Json\Json::encode(array('response' => true, 'new_note_id' => $book_id)));
+            $model = new Book();
+            $form->setInputFilter($model->getInputFilter());
+            $form->setData($request->getPost());
+
+            if ($form->isValid()) {
+                $model->exchangeArray($form->getData());
+                $this->getBooksTable()->saveBook($model);
+
+                // Redirect to list of albums
+                return $this->redirect()->toRoute('book');
             }
         }
-        return $response;
+
+        return new ViewModel(array(
+            'form' => $form
+        ));
     }
 
     public function removeAction() {
         $request = $this->getRequest();
         $response = $this->getResponse();
-        if ($request->isPost()) {
+
+        /*if ($request->isPost()) {
             $post_data = $request->getPost();
             $book_id = $post_data['id'];
+
+
+
+            $this->getBooksTable()->removeBook($book_id);
+
             if (!$this->getBooksTable()->removeBook($book_id))
                 $response->setContent(\Zend\Json\Json::encode(array('response' => false)));
             else {
                 $response->setContent(\Zend\Json\Json::encode(array('response' => true)));
             }
+        }*/
+
+        $book_id = (int) $this->params()->fromRoute('id', 0);
+        if($book_id){
+            $this->getBooksTable()->removeBook($book_id);
         }
-        return $response;
+
+
+        return $this->redirect()->toRoute('book');
     }
 
     public function updateAction(){
-        // update post
+        $id = (int) $this->params()->fromRoute('id', 0);
+        if (!$id) {
+            return $this->redirect()->toRoute('book', array(
+                'action' => 'add'
+            ));
+        }
+        $book = $this->getBooksTable()->getBook($id);
+
+        $form  = new BookForm();
+        $form->bind($book);
+
+        $form->get('submit')->setAttribute('value', 'Edit');
+
         $request = $this->getRequest();
-        $response = $this->getResponse();
         if ($request->isPost()) {
-            $post_data = $request->getPost();
-            $book_id = $post_data['id'];
-            $note_content = $post_data['content'];
-            $book = $this->getBooksTable()->getBook($book_id);
-            $book->setTitle($note_content);
-            if (!$this->getBooksTable()->saveBook($book))
-                $response->setContent(\Zend\Json\Json::encode(array('response' => false)));
-            else {
-                $response->setContent(\Zend\Json\Json::encode(array('response' => true)));
+            $form->setInputFilter($book->getInputFilter());
+            $form->setData($request->getPost());
+
+            if ($form->isValid()) {
+                $this->getBooksTable()->saveBook($form->getData());
+
+                // Redirect to list of albums
+                return $this->redirect()->toRoute('book');
             }
         }
-        return $response;
+
+        return new ViewModel(array(
+            'id' => $id,
+            'form' => $form,
+        ));
     }
 }
