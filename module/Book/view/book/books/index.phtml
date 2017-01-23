@@ -1,0 +1,17 @@
+<?php
+/**
+ * @var $books \Book\Model\Entity\Book[]
+ */
+?>
+
+<div id="books">
+    <?php foreach($books as $book):?>
+        <div class="book">
+            <textarea id="book-<?php echo $book->getId() ?>"><?php echo $book->getTitle() ?></textarea>
+            <a href="#" id="remove-<?php echo $book->getId(); ?>"class="delete-book">X</a>
+        </div>
+    <?php endforeach; ?>
+    <div id="create">+</div>
+
+</div>
+<div class="clear-both"></div>
